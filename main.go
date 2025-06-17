@@ -1,8 +1,10 @@
 package main
 
-import "fmt"
-
+import (
+	"go-http-server/server"
+)
 
 func main() {
-	fmt.Println("Building http server")
+	s := server.NewServer("localhost:8080")
+	s.Start()
 }
