@@ -55,28 +55,27 @@ func handleConnection(conn net.Conn){
 	query := parsedUrl.Query()
 
 	if method == "GET" {
-		if path == "/" {
+		switch path {
+		case "/":
 			body = "hello from my server!"
 			status = "200 OK"
-		}else if path == "/health" {
+		case "/health":
 			body = "OK"
 			status = "200 OK"
-		}else if path == "/greet" {
+		case "/greet":
 			name := query.Get("name")
 			if name == ""{
 				name = "stranger"
 			}
 			body = "hello there " + name
 			status = "200 OK"
-		} else {
+		default:
 			body = "404 Not Found"
 			status = "404 Not Found"
 		}
-		
-		writeResponse(conn, status, body)
-	}else {
+	} else {
 		body = "405 Method Not Allowed"
 		status = "405 Method Not Allowed"
-		writeResponse(conn, status, body)
 	}
+	writeResponse(conn, status, body)
 }
