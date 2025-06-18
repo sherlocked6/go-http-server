@@ -55,24 +55,25 @@ func handleConnection(conn net.Conn){
 	query := parsedUrl.Query()
 
 	if method == "GET" {
-		switch path {
-		case "/":
-			body = "hello from my server!"
-			status = "200 OK"
-		case "/health":
-			body = "OK"
-			status = "200 OK"
-		case "/greet":
-			name := query.Get("name")
-			if name == ""{
-				name = "stranger"
-			}
-			body = "hello there " + name
-			status = "200 OK"
-		default:
-			body = "404 Not Found"
-			status = "404 Not Found"
-		}
+		ServeStatic(conn, path, query)
+		// switch path {
+		// case "/":
+		// 	body = "hello from my server!"
+		// 	status = "200 OK"
+		// case "/health":
+		// 	body = "OK"
+		// 	status = "200 OK"
+		// case "/greet":
+		// 	name := query.Get("name")
+		// 	if name == ""{
+		// 		name = "stranger"
+		// 	}
+		// 	body = "hello there " + name
+		// 	status = "200 OK"
+		// default:
+		// 	body = "404 Not Found"
+		// 	status = "404 Not Found"
+		// }
 	} else {
 		body = "405 Method Not Allowed"
 		status = "405 Method Not Allowed"
