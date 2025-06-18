@@ -3,9 +3,8 @@ package server
 import (
 	"fmt"
 	"net"
+	"net/url"
 )
-
-
 
 type Server struct {
 	addr string
@@ -38,17 +37,46 @@ func (s *Server) Start() {
 func handleConnection(conn net.Conn){
 	defer conn.Close()
 
-	method, path := ReadRequest(conn)
+	method, rawPath := ReadRequest(conn)
 
-	fmt.Printf("Recievd request : %s %s\n", method, path)
+	fmt.Printf("Recieved request : %s %s\n", method, rawPath)
 
-	body := "hello from my server!"
-	resp := fmt.Sprintf(
-		"HTTP/1.1 200 OK\r\n" +
-			"Content-Length: %d\r\n" +
-			"Connection: close\r\n\r\n%s",
-		len(body), body)
-	
-	//fmt.Println(resp)
-	conn.Write([]byte(resp))
+	var body string
+	var status string
+
+	parsedUrl, err := url.Parse(rawPath)
+
+	if err != nil {
+		writeResponse(conn, "400 Bad Request", "Malformed URL")
+		return
+	}
+
+	path := parsedUrl.Path
+	query := parsedUrl.Query()
+
+	if method == "GET" {
+		if path == "/" {
+			body = "hello from my server!"
+			status = "200 OK"
+		}else if path == "/health" {
+			body = "OK"
+			status = "200 OK"
+		}else if path == "/greet" {
+			name := query.Get("name")
+			if name == ""{
+				name = "stranger"
+			}
+			body = "hello there " + name
+			status = "200 OK"
+		} else {
+			body = "404 Not Found"
+			status = "404 Not Found"
+		}
+		
+		writeResponse(conn, status, body)
+	}else {
+		body = "405 Method Not Allowed"
+		status = "405 Method Not Allowed"
+		writeResponse(conn, status, body)
+	}
 }
