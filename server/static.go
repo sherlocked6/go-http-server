@@ -18,7 +18,7 @@ func ServeStatic(conn net.Conn, requestPath string, query url.Values) {
 	cleanPath := filepath.Clean(requestPath)
 	filePath := filepath.Join("./public", cleanPath)
 
-	fmt.Println(filePath)
+	//fmt.Println(filePath)
 
 	//file, err := os.Open("./public/index.html")
 	file, err := os.Open(filePath)

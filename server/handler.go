@@ -8,8 +8,9 @@ import (
 )
 
 
-func ReadRequest(conn net.Conn) (method, path string) {
-	reader := bufio.NewReader(conn)
+func ReadRequest(reader *bufio.Reader) (method, path string, headers map[string]string) {
+	
+	headers = make(map[string]string)
 	
 	line, err := reader.ReadString('\n')
 
@@ -20,10 +21,24 @@ func ReadRequest(conn net.Conn) (method, path string) {
 	items := strings.Split(strings.TrimSpace(line), " ")
 
 	if len(items) < 2 {
-		return "", ""
+		return "", "", headers
 	}
 
-	return items[0], items[1]
+	for {
+		line, _ := reader.ReadString('\n')
+		line = strings.TrimSpace(line)
+		if line == ""{
+			break
+		}
+		items := strings.SplitN(line, ":", 2)
+		if len(items) == 2 {
+			headers[strings.TrimSpace(items[0])] = strings.TrimSpace(items[1])
+		}
+	}
+
+	fmt.Println(len(headers))
+
+	return items[0], items[1], headers
 }
 
 
