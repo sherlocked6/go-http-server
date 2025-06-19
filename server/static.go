@@ -3,7 +3,8 @@ package server
 import (
 	"fmt"
 	"io"
-	"mime"
+	"strings"
+	//"mime"
 	"net"
 	"net/url"
 	"os"
@@ -12,38 +13,51 @@ import (
 
 func ServeStatic(conn net.Conn, requestPath string, query url.Values) {
 	if requestPath == "/" {
-		requestPath = "/index.html"
+		requestPath = "index"
 	}
-
-	cleanPath := filepath.Clean(requestPath)
+	cleanPath := filepath.Clean(requestPath) + ".html"
 	filePath := filepath.Join("./public", cleanPath)
 
-	//fmt.Println(filePath)
-
+	// fmt.Println(filePath)
 	//file, err := os.Open("./public/index.html")
 	file, err := os.Open(filePath)
-
 	if err != nil {
-		writeResponse(conn, "404 Not Found", "File not found")
+		WriteResponse(conn, "404 Not Found", "File not found")
 		return
 	}
 	defer file.Close()
 
-	info, err := file.Stat()
-
+	data, err := io.ReadAll(file)
 	if err != nil {
-		writeResponse(conn, "404 Not Found", "File not found")
+		WriteResponse(conn, "500 Internal Server Error", "Failed to read file")
 		return
 	}
 
-	contentType := mime.TypeByExtension(filepath.Ext(filePath))
-	if contentType == "" {
-		contentType = "application/octet-stream"
+	body := string(data)
+	if len(query) == 0 {
+		body = strings.ReplaceAll(body, "{{name}}", "Stranger")
+	}
+	for key, value := range query {
+		placeholder := fmt.Sprintf("{{%s}}", key)
+		body = strings.ReplaceAll(body, placeholder, value[0])
 	}
 
-	header := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Length: %d\r\nContent-Type: %s\r\nonnection: close\r\n\r\n", info.Size(), contentType)
+	WriteResponse(conn, "200 OK", body)
 
-	conn.Write([]byte(header))
+	// info, err := file.Stat()
+	// if err != nil {
+	// 	WriteResponse(conn, "404 Not Found", "File not found")
+	// 	return
+	// }
 
-	io.Copy(conn, file)
+	// contentType := mime.TypeByExtension(filepath.Ext(filePath))
+	// if contentType == "" {
+	// 	contentType = "application/octet-stream"
+	// }
+
+	// header := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Length: %d\r\nContent-Type: %s\r\nonnection: close\r\n\r\n", info.Size(), contentType)
+
+	// conn.Write([]byte(header))
+
+	// io.Copy(conn, file)
 }

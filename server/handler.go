@@ -3,27 +3,27 @@ package server
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net"
+	"net/url"
+	"strconv"
 	"strings"
 )
 
 
-func ReadRequest(reader *bufio.Reader) (method, path string, headers map[string]string) {
-	
-	headers = make(map[string]string)
-	
+func ReadRequest(reader *bufio.Reader) (*Request, error) {	
 	line, err := reader.ReadString('\n')
-
 	if err != nil {
 		fmt.Println("error handling request line: ", err)
 	}
 
 	items := strings.Split(strings.TrimSpace(line), " ")
-
 	if len(items) < 2 {
-		return "", "", headers
+		return nil, fmt.Errorf("invalid request")
 	}
+	method, rawPath := items[0], items[1]
 
+	headers := make(map[string]string)
 	for {
 		line, _ := reader.ReadString('\n')
 		line = strings.TrimSpace(line)
@@ -36,13 +36,32 @@ func ReadRequest(reader *bufio.Reader) (method, path string, headers map[string]
 		}
 	}
 
-	fmt.Println(len(headers))
+	parsedUrl, _ := url.Parse(rawPath)
 
-	return items[0], items[1], headers
+	req := &Request{
+		Method: method,
+		Path: parsedUrl.Path,
+		Query: parsedUrl.Query(),
+		Headers: headers,
+	}
+
+	if method == "POST" {
+		cl := headers["Content-Length"]
+		length, _ := strconv.Atoi(cl)
+
+		buf := make([]byte, length)
+		_, err := io.ReadFull(reader, buf)
+		if err != nil {
+			return nil, err
+		}
+		req.Body = buf
+	}
+
+	return req, nil
 }
 
 
-func writeResponse(conn net.Conn, status, body string) {
+func WriteResponse(conn net.Conn, status, body string) {
 	resp := fmt.Sprintf("HTTP/1.1 %s \r\n" +
 			"Content-Length: %d\r\n" +
 			"Connection: close\r\n\r\n%s",
